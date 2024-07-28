@@ -35,7 +35,7 @@ def registerpage(request):
 
 def logoutpage(request):
     logout(request)
-    return redirect('login')
+    return redirect('Home')
 
 def homepage(request):
     return render(request,"index2.html") 

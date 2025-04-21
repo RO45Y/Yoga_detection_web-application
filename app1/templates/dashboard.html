@@ -1,0 +1,408 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoga Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #a1a1a1;
+            background: linear-gradient(126deg, rgba(161, 161, 161, 0.99) 0%, rgba(255, 255, 255, 1) 100%);
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .yoga-card {
+            display: inline-block;
+            width: 250px;
+            background: white;
+            border-radius: 8px;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
+        .yoga-card:hover {
+            transform: scale(1.05);
+        }
+        .yoga-card img {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+        }
+        .yoga-card h3 {
+            margin: 10px 0;
+        }
+        /* Fullscreen Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Dark background */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Center Content */
+.modal-content {
+    width: 90%;
+    height: 90%;
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Webcam Video */
+#webcamVideo {
+    width: 100%;
+    height: 80%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* Close Button */
+.close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+        .btn {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-decoration: none;
+        }
+        .loading {
+            display: none;
+            font-size: 14px;
+            color: #ff9800;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome to Your Yoga Dashboard</h2>
+        <div id="yoga-cards">
+            {% for pose in poses %}
+            <div class="yoga-card" 
+    data-name="{{ pose.name }}" 
+    data-description="{{ pose.description }}" 
+    data-video="{% if pose.video_file %}{{ pose.video_file.url }}{% elif pose.video_url %}{{ pose.video_url }}{% endif %}">
+    <img src="{{ pose.reference_image.url }}" alt="{{ pose.name }}">
+    <h3>{{ pose.name }}</h3>
+    <p>{{ pose.description|truncatewords:10 }}</p>
+</div>
+
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Modal for Video -->
+    <div id="poseModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="modalTitle"></h3>
+            <p id="modalDescription"></p>
+            
+            <p class="loading">Fetching pose data...</p>
+            
+            <!-- Video Player -->
+            <video id="modalVideo" width="100%" height="300" controls style="display: none;">
+                <source id="videoSource" src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            <br>
+            <!-- Change from <a> to <button> for POST action -->
+            <button id="tryPoseButton" class="btn" style="pointer-events: none; opacity: 0.5;">Try Pose</button>
+        </div>
+    </div>
+
+    <!-- Modal for Webcam -->
+    <div id="webcamModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Start Your Pose</h3>
+            <p>Make sure your webcam is positioned correctly!</p>
+    
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <!-- Webcam Video Player -->
+                <video id="webcamVideo" width="48%" height="300" autoplay muted></video>
+    
+                <!-- Processed Image and Message -->
+                <div id="processedPoseContainer" style="width: 48%; text-align: center;">
+                    <h4>Processed Pose</h4>
+                    <img id="processedPoseImage" src="" alt="Processed Pose" style="width: 100%; display: none;">
+                    <p id="poseMessage" style="font-size: 18px; font-weight: bold; color: green;"></p>
+                </div>
+            </div>
+    
+            <br>
+            <button id="startPoseButton" class="btn" style="pointer-events: none; opacity: 0.5;">Start Pose</button>
+        </div>
+    </div>
+    
+    <!-- Hidden audio for the hold pose alert -->
+    <audio id="poseHoldAudio">
+        <source src="{% static 'sounds/success.mp3' %}" type="audio/mpeg">
+    </audio>
+
+    <script>
+        $(document).ready(function(){
+            // Handle card click event
+            $(document).on("click", ".yoga-card", function(){
+                let poseName = $(this).data("name").trim();
+                let poseDescription = $(this).data("description");
+                let videoSrc = $(this).data("video");
+            
+                if (!poseName) {
+                    alert("Pose name is missing!");
+                    return;
+                }
+            
+                $("#modalTitle").text(poseName);
+                $("#modalDescription").text(poseDescription);
+            
+                // Hide video element by default
+                $("#modalVideo").hide();
+                $("#videoSource").attr("src", "");
+                $("iframe").remove();  // Remove any existing iframe video
+                
+                if (videoSrc) {
+                    if (videoSrc.includes("youtu.be") || videoSrc.includes("youtube.com")) {
+                        let videoId;
+                        if (videoSrc.includes("youtu.be/")) {
+                            videoId = videoSrc.split("youtu.be/")[1].split("?")[0]; // Extract ID from short link
+                        } else if (videoSrc.includes("watch?v=")) {
+                            videoId = videoSrc.split("watch?v=")[1].split("&")[0]; // Extract ID from full YouTube URL
+                        }
+            
+                        if (videoId) {
+                            let embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+                            $("#modalVideo").hide();
+                            // Add the YouTube embed iframe
+                            $("#modalVideo").after(`<iframe id="youtubeIframe" width="100%" height="300" src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`);
+                        }
+                    } else { // Local video
+                        $("#videoSource").attr("src", videoSrc);
+                        $("#modalVideo")[0].load();
+                        $("#modalVideo").show();
+                    }
+                }
+            
+                $(".loading").show();
+                $("#tryPoseButton").css({"pointer-events": "none", "opacity": "0.5"});
+            
+                $(".loading").hide();
+                $("#tryPoseButton").css({"pointer-events": "auto", "opacity": "1"});
+            
+                $("#tryPoseButton").off("click").click(function(event){
+                    event.preventDefault();
+                    openWebcamModal(poseName);
+                });
+            
+                $("#poseModal").fadeIn();
+            });
+            
+            // Close pose modal
+            $(".close").click(function(){
+                // Stop the local video (if it's playing)
+                let modalVideo = document.querySelector("#modalVideo");
+                if (modalVideo) {
+                    modalVideo.pause();  // Pause the video
+                    modalVideo.currentTime = 0;  // Reset the video to the start
+                    $("#videoSource").attr("src", "");  // Clear the video source
+                    modalVideo.load();  // Reload the video element to reset
+                }
+        
+                // Stop YouTube video (if embedded)
+                let youtubeIframe = document.querySelector("#youtubeIframe");
+                if (youtubeIframe) {
+                    let iframeSrc = youtubeIframe.src;
+                    // Stop the video by removing the iframe
+                    youtubeIframe.parentNode.removeChild(youtubeIframe);
+                }
+        
+                // Close the pose modal
+                $("#poseModal").fadeOut();
+            });
+        });
+        
+        
+        // Function to open webcam modal
+        let webcamStream = null;
+let frameInterval = null;
+
+async function openWebcamModal(poseName) {
+    $("#webcamModal").fadeIn();
+    await startWebcam();
+
+    // Enable the start pose button
+    $("#startPoseButton").css({"pointer-events": "auto", "opacity": "1"});
+
+    // Add click event listener to start pose
+    $("#startPoseButton").off("click").click(function(event){
+        event.preventDefault();
+        console.log("Start Pose button clicked!");
+
+        // Start sending frames continuously
+        startSendingFrames(poseName);
+    });
+}
+
+// Start webcam stream
+async function startWebcam() {
+    try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const videoElement = document.querySelector("#webcamVideo");
+        videoElement.srcObject = webcamStream;
+    } catch (err) {
+        console.error("Error accessing webcam: ", err);
+    }
+}
+
+// Capture and send frames continuously
+function startSendingFrames(poseName) {
+    frameInterval = setInterval(() => {
+        const imageData = captureImage();
+        sendPoseData(poseName, imageData);
+    }, 300);  // Sends a frame every 100ms
+}
+
+// Capture image from webcam
+function captureImage() {
+    const videoElement = document.querySelector("#webcamVideo");
+    let canvas = document.createElement("canvas");
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg");
+}
+
+// Send image data to backend
+let correctPoseStartTime = null;
+let poseTimer = null;
+
+function sendPoseData(poseName, imageData) {
+    console.log("Sending pose data:", poseName, imageData);
+
+    $.ajax({
+        type: "POST",
+        url: `http://127.0.0.1:8000/pose_detection/${poseName}/`,
+        data: JSON.stringify({
+            pose_name: poseName,
+            image: imageData
+        }),
+        contentType: "application/json",
+        dataType: "json",
+        success: function (response) {
+            console.log("Pose data received:", response);
+            
+            // Update UI with processed image and message
+            if (response.landmarkImage) {
+                $("#processedPoseImage").attr("src", "data:image/jpeg;base64," + response.landmarkImage).show();
+            }
+            
+            if (response.poseStatus) {
+                let messageColor = response.poseStatus === "correct" ? "green" : "red";
+                $("#poseMessage").text(response.poseStatus.toUpperCase()).css("color", messageColor);
+                
+                if (response.poseStatus === "correct") {
+                    startPoseHoldTimer();
+                } else {
+                    resetPoseHold();
+                
+                    // Stop the audio if it's playing
+                    let audio = document.getElementById("poseHoldAudio");
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+                
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error sending pose data:", xhr.responseText);
+        }
+    });
+}
+
+function startPoseHoldTimer() {
+    if (!correctPoseStartTime) {
+        correctPoseStartTime = new Date().getTime();
+        $("#poseMessage").text("Hold Pose for 4 sec...").css("color", "blue");
+        
+        let audio = document.getElementById("poseHoldAudio");
+        audio.play();  // Play sound alert for 4 seconds
+
+        poseTimer = setTimeout(() => {
+            stopPoseDetection();
+        }, 6000);
+    }
+}
+
+function resetPoseHold() {
+    correctPoseStartTime = null;
+    if (poseTimer) {
+        clearTimeout(poseTimer);
+        poseTimer = null;
+    }
+
+    // Reset audio just in case
+    let audio = document.getElementById("poseHoldAudio");
+    audio.pause();
+    audio.currentTime = 0;
+}
+
+
+function stopPoseDetection() {
+    $("#webcamModal").hide();  // Close webcam modal
+    $("#poseMessage").text("Pose Completed! Redirecting...").css("color", "green");
+    
+    setTimeout(() => {
+        window.location.href = "/dashboard";  // Redirect to dashboard
+    }, 1000);
+}
+
+// Stop webcam stream and frame sending when modal is closed
+function stopWebcamStream() {
+    const videoElement = document.querySelector("#webcamVideo");
+    const stream = videoElement.srcObject;
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        videoElement.srcObject = null;
+    }
+    clearInterval(frameInterval);  // Stop sending frames
+}
+
+// Close webcam modal
+$(".close").click(function() {
+    $("#webcamModal").fadeOut();  // Hide the webcam modal
+    stopWebcamStream();  // Stop the webcam stream and video
+});
+    </script>
+</body>
+</html>

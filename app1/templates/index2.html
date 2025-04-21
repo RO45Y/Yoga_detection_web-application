@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YogTech – Find Balance & Peace</title>
+    <link rel="stylesheet" href="{% static 'style2.css' %}">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: url("/static/yog2.jpg") no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: relative;
+            color: white;
+        }
+
+        header {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            padding: 20px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.1);
+            color: #ffb703;
+        }
+
+        .navigation button {
+            margin-left: 12px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            background: #ffffffcc;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .navigation button:hover {
+            background: #ffb703;
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .main-content {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 800px;
+            backdrop-filter: blur(5px);
+            animation: fadeInUp 1s ease forwards, pulse 2.5s infinite ease-in-out;
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ffcc00;
+        }
+
+        p {
+            font-size: 20px;
+            line-height: 1.6;
+            margin: 10px 0;
+            opacity: 0;
+            animation: fadeText 1s forwards;
+        }
+
+        p:nth-child(2) { animation-delay: 0.5s; }
+        p:nth-child(3) { animation-delay: 1s; }
+        p:nth-child(4) { animation-delay: 1.5s; }
+        p:nth-child(5) { animation-delay: 2s; }
+
+        @keyframes fadeText {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(255, 183, 3, 0.3);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 0 25px rgba(255, 183, 3, 0.5);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(255, 183, 3, 0.3);
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            header {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .navigation button {
+                margin-top: 10px;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+
+            .main-content {
+                padding: 20px;
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2 class="logo">YogTech</h2>
+    <nav class="navigation">
+        <form style="display: inline" action="login" method="get">
+            <button class="btnLogin-popup" type="submit">Login</button>
+            <button class="pup" type="submit" formaction="register">Register</button>
+        </form>
+    </nav> 
+</header>
+
+<div class="main-content">
+    <h1>Find Balance and Peace</h1>
+    <p>Embrace the power of yoga to transform your body and mind.</p>
+    <p>Join our community to discover your inner strength.</p>
+    <p>Unlock your potential through mindful practice.</p>
+    <p>Begin your journey towards a balanced life.</p>
+</div>
+
+</body>
+</html>

@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import YogaPose, UserProfile
 
-# Register your models here.
+admin.site.register(YogaPose)
+admin.site.register(UserProfile)

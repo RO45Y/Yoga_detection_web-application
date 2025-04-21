@@ -1,0 +1,194 @@
+{% comment %} <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pose Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #message { font-size: 24px; font-weight: bold; color: green; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Pose Detection</h1>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <p id="message"></p>
+
+    <script>
+        // Reference Pose Data (Example Pose)
+        const referencePose =  [
+            {"x": 0.5818443298339844, "y": 0.1412491798400879, "z": -0.19525586068630219},
+            {"x": 0.5727018713951111, "y": 0.11921551823616028, "z": -0.16150297224521637},
+            {"x": 0.5716649889945984, "y": 0.11879006773233414, "z": -0.16161029040813446},
+            {"x": 0.5704913139343262, "y": 0.1183575987815857, "z": -0.16173163056373596},
+            {"x": 0.5681995153427124, "y": 0.11941894888877869, "z": -0.19858919084072113},
+            {"x": 0.5647875070571899, "y": 0.1194138452410698, "z": -0.1986723691225052},
+            {"x": 0.5611225366592407, "y": 0.11954840272665024, "z": -0.19866880774497986},
+            {"x": 0.5489223599433899, "y": 0.13014665246009827, "z": -0.01699467934668064},
+            {"x": 0.5363806486129761, "y": 0.13272252678871155, "z": -0.19033533334732056},
+            {"x": 0.5784633755683899, "y": 0.16334065794944763, "z": -0.14354437589645386},
+            {"x": 0.5729540586471558, "y": 0.16484114527702332, "z": -0.1936231106519699},
+            {"x": 0.592509925365448, "y": 0.26039084792137146, "z": 0.04233052209019661},
+            {"x": 0.45916372537612915, "y": 0.26136982440948486, "z": -0.20343279838562012},
+            {"x": 0.7132081985473633, "y": 0.23053929209709167, "z": 0.03791067376732826},
+            {"x": 0.33558452129364014, "y": 0.25319045782089233, "z": -0.261917382478714},
+            {"x": 0.8113421201705933, "y": 0.2204517424106598, "z": -0.1041133776307106},
+            {"x": 0.22248703241348267, "y": 0.24889490008354187, "z": -0.3317353129386902},
+            {"x": 0.8466123342514038, "y": 0.2185375988483429, "z": -0.12368699163198471},
+            {"x": 0.18782967329025269, "y": 0.24404388666152954, "z": -0.3561118245124817},
+            {"x": 0.8525075912475586, "y": 0.2157442271709442, "z": -0.17790725827217102},
+            {"x": 0.183305025100708, "y": 0.24313275516033173, "z": -0.3964243531227112},
+            {"x": 0.8400447964668274, "y": 0.22047042846679688, "z": -0.13829529285430908},
+            {"x": 0.19297906756401062, "y": 0.24808433651924133, "z": -0.355399489402771},
+            {"x": 0.5523563623428345, "y": 0.5918285846710205, "z": 0.07114867120981216},
+            {"x": 0.46440744400024414, "y": 0.5874856114387512, "z": -0.07107548415660858},
+            {"x": 0.7101365327835083, "y": 0.683070182800293, "z": -0.09666784107685089},
+            {"x": 0.35859596729278564, "y": 0.7470400929450989, "z": -0.10149088501930237},
+            {"x": 0.7387765049934387, "y": 0.8999748826026917, "z": -0.006911467295140028},
+            {"x": 0.24524182081222534, "y": 0.9017810821533203, "z": 0.04884378984570503},
+            {"x": 0.7198528051376343, "y": 0.9436120986938477, "z": -0.006864698138087988},
+            {"x": 0.23861591517925262, "y": 0.9189350605010986, "z": 0.053442180156707764},
+            {"x": 0.8119957447052002, "y": 0.9355286359786987, "z": -0.14355970919132233},
+            {"x": 0.21289896965026855, "y": 0.9594498872756958, "z": -0.11922816187143326},
+        ];
+
+        let video = document.getElementById("video");
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+
+        let detector;
+        let isPoseCorrect = false;
+        let holdStartTime = null;
+
+        // Initialize Webcam
+        async function setupCamera() {
+            video.width = 640;
+            video.height = 480;
+            canvas.width = 640;
+            canvas.height = 480;
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true
+            });
+            video.srcObject = stream;
+
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => resolve(video);
+            });
+        }
+
+        // Load Pose Model
+        async function loadPoseModel() {
+            detector = await poseDetection.createDetector(poseDetection.SupportedModels.BlazePose, {
+                runtime: "tfjs",
+                modelType: "full",
+            });
+        }
+
+        // Function to calculate Euclidean distance between two keypoints
+        // Function to calculate Euclidean distance between two keypoints
+// Function to calculate Euclidean distance between two keypoints
+function calculateDistance(refLandmark, curLandmark) {
+    // Default z to 0 if missing
+    const z1 = refLandmark.z || 0;
+    const z2 = curLandmark.z || 0;
+
+    let dx = refLandmark.x - curLandmark.x;
+    let dy = refLandmark.y - curLandmark.y;
+    let dz = z1 - z2;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+// Compare Detected Pose with Reference Pose
+function isMatchingPose(detectedPose) {
+    if (!detectedPose || detectedPose.length !== referencePose.length) return 0;
+
+    let matchingKeypoints = 0;
+    const totalLandmarks = referencePose.length;
+    const threshold = 2;  // Set an appropriate threshold for matching
+
+    // Loop through the reference pose and detected pose keypoints
+    for (let i = 0; i < totalLandmarks; i++) {
+        const refLandmark = referencePose[i];
+        const curLandmark = detectedPose[i];
+
+        // Only compare landmarks that are visible (non-zero x value)
+        if (refLandmark.x !== 0 && curLandmark.x !== 0) {
+            // Ensure landmarks are within valid ranges (0 <= x, y <= 1)
+            if (curLandmark.x < 0 || curLandmark.x > 1 || curLandmark.y < 0 || curLandmark.y > 1) {
+                console.warn(`Invalid coordinates for keypoint ${i}: Detected (${curLandmark.x}, ${curLandmark.y})`);
+                continue; // Skip invalid landmarks
+            }
+
+            // Calculate Euclidean distance between corresponding landmarks
+            const dist = calculateDistance(refLandmark, curLandmark);
+            
+            // Log the distances and the keypoints being compared
+            console.log(`Comparing keypoint ${i} - Reference: (${refLandmark.x}, ${refLandmark.y}), Detected: (${curLandmark.x}, ${curLandmark.y}), Distance: ${dist}`);
+            
+            // If distance is below threshold, consider it a match
+            if (dist < threshold) {
+                matchingKeypoints += 1;
+            }
+        }
+    }
+
+    // Log the number of matching keypoints and return the matching ratio
+    console.log(`Matching Keypoints: ${matchingKeypoints} out of ${totalLandmarks}`);
+    return matchingKeypoints / totalLandmarks;
+}
+
+// Pose Detection Loop
+async function detectPose() {
+    if (!detector) return;
+
+    const poses = await detector.estimatePoses(video);
+    if (poses.length > 0) {
+        const detectedLandmarks = poses[0].keypoints.map(kp => ({
+            x: kp.x / video.width,  // Normalize to [0, 1]
+            y: kp.y / video.height, // Normalize to [0, 1]
+            z: kp.z || 0,  // Default to 0 if z is undefined
+        }));
+
+        let matchingRatio = isMatchingPose(detectedLandmarks);
+
+        if (matchingRatio >= 0.9) {  // If 90% or more keypoints match
+            document.getElementById("message").innerText = "✅ Pose Matched!";
+            playSuccessSound();
+            setTimeout(() => window.location.href = "dashboard.html", 2000);
+        } else {
+            document.getElementById("message").innerText = "❌ Incorrect Pose";
+        }
+
+        drawPose(detectedLandmarks, matchingRatio >= 0.9);
+    }
+
+    requestAnimationFrame(detectPose);
+}
+
+
+        // Play Success Sound
+        function playSuccessSound() {
+            let audio = new Audio("success.mp3");
+            audio.play();
+        }
+
+        // Initialize Everything
+        async function init() {
+            await setupCamera();
+            await loadPoseModel();
+            detectPose();
+        }
+
+        init();
+    </script>
+</body>
+</html> {% endcomment %}

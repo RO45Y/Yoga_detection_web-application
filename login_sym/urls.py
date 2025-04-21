@@ -1,28 +1,25 @@
-"""
-URL configuration for login_sym project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
 from app1 import views
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('',views.homepage,name='Home'),
-    path('login/',views.loginpage,name='login'),
-    path('register/',views.registerpage,name='signup'),
-    path('inside/',views.Homepage,name='Inside'),
-    path('logout/',views.logoutpage,name='logout')
+from django.conf import settings
+from django.conf.urls.static import static
 
-]
+urlpatterns = [
+    path("admin/", admin.site.urls),  # ✅ Fix: Added admin path
+    path("", views.homepage, name="home"),
+    path("login/", views.loginpage, name="login"),
+    path("register/", views.registerpage, name="signup"),
+    path("logout/", views.logoutpage, name="logout"),
+
+    # Dashboard
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("inside/", views.Homepage, name="inside"),
+
+    # Pose Detection
+    
+
+    path("get-landmarks/<str:pose_name>/", views.get, name="get_landmarks"),
+    # path("process-pose/", views.process_pose, name="process_pose"),
+    path('pose_detection/<str:pose_name>/', views.pose_detection, name='pose_detection'),
+    
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

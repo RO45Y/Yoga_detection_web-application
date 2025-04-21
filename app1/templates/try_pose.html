@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Try {{ pose.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .pose-container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        img {
+            max-width: 100%;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pose-container">
+        <h2>{{ pose.name }}</h2>
+        <img src="{{ pose.reference_image.url }}" alt="{{ pose.name }}">
+        <p>{{ pose.description }}</p>
+        <iframe width="100%" height="350" src="{{ pose.video_url }}" frameborder="0" allowfullscreen></iframe>
+        <br><br>
+        <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
+    </div>
+</body>
+</html>

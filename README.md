@@ -44,7 +44,7 @@ Setup Instructions (Yoga Detection and Correction App)
 -----------------------
 git clone https://github.com/RO45Y/Yoga_detection_web-application.git
 
-cd yoga-detection-app
+cd Yoga-detection_web-application
 
 🅑 Create and Activate a Virtual Environment
 -------------------------------------------

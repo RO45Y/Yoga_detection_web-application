@@ -19,7 +19,7 @@ This project is a computer vision-based Yoga Detection and Correction applicatio
 
 ## 📽️ Demo Video
 
-👉 [Click here to watch the demo video](https://your-demo-video-link.com)
+👉 [Click here to watch the demo video](https://youtu.be/rV_VCi2HrVg?si=ZA0epIeLAgGF7Y8E)
 
 ---
 
@@ -42,7 +42,7 @@ Setup Instructions (Yoga Detection and Correction App)
 
 🅐 Clone the Repository
 -----------------------
-git clone https://github.com/yourusername/yoga-detection-app.git
+git clone https://github.com/RO45Y/Yoga_detection_web-application/tree/main.git
 cd yoga-detection-app
 
 🅑 Create and Activate a Virtual Environment
